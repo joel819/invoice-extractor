@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoice Extractor</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #e4e4df;
+    --accent: #2f5bd3; --accent-soft: #e9eefb; --ok: #2f7d4f; --ok-soft: #e6f3ec;
+    --warn: #9a6700; --warn-soft: #fbf3dc; --err: #b3261e; --err-soft: #fbe9e7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151514; --panel: #1f1f1d; --text: #ecece8; --muted: #9d9d97; --line: #33332f;
+      --accent: #7f9ef0; --accent-soft: #252d44; --ok: #5cc488; --ok-soft: #1c2e24;
+      --warn: #e3b341; --warn-soft: #332a14; --err: #f2867d; --err-soft: #3a1e1c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px; display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
+  header { grid-column: 1 / -1; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  aside .panel + .panel { margin-top: 16px; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+  .badge.demo { color: var(--warn); }
+  .drop { border: 1.5px dashed var(--line); border-radius: 8px; padding: 22px; text-align: center; color: var(--muted); cursor: pointer; }
+  .drop.over { border-color: var(--accent); color: var(--accent); }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); padding: 5px 10px; }
+  .samples button { display: block; width: 100%; text-align: left; margin-bottom: 6px; font-size: 13px; }
+  .hist { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  .hist li { padding: 6px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .hist li:hover { color: var(--accent); }
+  .status { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+  .status.ok { background: var(--ok-soft); color: var(--ok); }
+  .status.needs_review { background: var(--warn-soft); color: var(--warn); }
+  .status.error { background: var(--err-soft); color: var(--err); }
+  .meta { font-size: 12px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 14px 0; }
+  .field { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .field.low { border-color: var(--warn); background: var(--warn-soft); }
+  .field .k { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+  .field .v { font-weight: 500; word-break: break-word; }
+  .conf { font-variant-numeric: tabular-nums; }
+  .low .conf { color: var(--warn); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.low td { background: var(--warn-soft); }
+  .flags { margin: 12px 0; display: grid; gap: 6px; }
+  .flag { font-size: 14px; padding: 8px 10px; border-radius: 6px; border-left: 3px solid; }
+  .flag.error { background: var(--err-soft); border-color: var(--err); }
+  .flag.warning { background: var(--warn-soft); border-color: var(--warn); }
+  .flag code { font-size: 12px; }
+  details pre { white-space: pre-wrap; font-size: 12px; background: var(--bg); padding: 10px; border-radius: 6px; max-height: 400px; overflow: auto; }
+  .empty { color: var(--muted); padding: 40px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Invoice Extractor</h1>
+    <span id="mode" class="badge">loading…</span>
+    <span class="meta">PDF in, validated JSON out. Low-confidence fields are highlighted.</span>
+  </header>
+
+  <aside>
+    <div class="panel">
+      <h2>Upload</h2>
+      <div id="drop" class="drop">Drop a PDF invoice here or click</div>
+      <input id="file" type="file" accept="application/pdf,.pdf" hidden>
+    </div>
+    <div class="panel samples">
+      <h2>Sample invoices</h2>
+      <div id="samples"></div>
+    </div>
+    <div class="panel">
+      <h2>History</h2>
+      <ul id="hist" class="hist"></ul>
+    </div>
+  </aside>
+
+  <main class="panel" id="result"><div class="empty">Upload a PDF or pick a sample invoice.</div></main>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let THRESHOLD = 0.7;
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(body.message || `Request failed (${r.status})`); e.body = body; e.status = r.status; throw e; }
+  return body;
+}
+
+function field(label, path, value, conf) {
+  if (value === null || value === undefined || value === "") return "";
+  const c = conf[path];
+  const low = c !== undefined && c < THRESHOLD;
+  return `<div class="field ${low ? "low" : ""}"><div class="k"><span>${esc(label)}</span>${c !== undefined ? `<span class="conf">${Math.round(c * 100)}%</span>` : ""}</div><div class="v">${esc(value)}</div></div>`;
+}
+
+function render(r) {
+  const inv = r.invoice, c = r.confidence, t = inv.totals;
+  const lowRow = (i) => ["description", "quantity", "unit_price", "amount"].some((k) => (c[`line_items[${i}].${k}`] ?? 1) < THRESHOLD);
+  const money = (v) => `${esc(v)} ${esc(inv.currency)}`;
+  $("#result").innerHTML = `
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span class="status ${r.status}">${r.status === "ok" ? "OK" : "NEEDS REVIEW"}</span>
+      <b>${esc(r.filename)}</b>
+      <span class="meta">${r.pages} page(s) · ${r.processing_ms} ms · ${esc(r.mode)} · #${r.id}</span>
+    </div>
+    ${r.flags.length ? `<div class="flags">${r.flags.map((f) => `<div class="flag ${f.severity}"><code>${esc(f.code)}</code> · ${esc(f.message)}</div>`).join("")}</div>` : ""}
+    <div class="grid">
+      ${field("Vendor", "vendor.name", inv.vendor.name, c)}
+      ${field("Invoice number", "invoice_number", inv.invoice_number, c)}
+      ${field("Invoice date", "invoice_date", inv.invoice_date, c)}
+      ${field("Due date", "due_date", inv.due_date, c)}
+      ${field("Currency", "currency", inv.currency, c)}
+      ${field("Vendor tax ID", "vendor.tax_id", inv.vendor.tax_id, c)}
+      ${field("Vendor email", "vendor.email", inv.vendor.email, c)}
+      ${field("Vendor address", "vendor.address", inv.vendor.address, c)}
+      ${field("Bill to", "bill_to", inv.bill_to, c)}
+    </div>
+    <table>
+      <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead>
+      <tbody>${inv.line_items.map((li, i) => `<tr class="${lowRow(i) ? "low" : ""}"><td>${esc(li.description)}</td><td class="num">${esc(li.quantity)}</td><td class="num">${esc(li.unit_price)}</td><td class="num">${esc(li.amount)}</td></tr>`).join("")}</tbody>
+    </table>
+    <div class="grid">
+      ${field("Subtotal", "totals.subtotal", money(t.subtotal), c)}
+      ${t.discount !== "0.00" ? field("Discount", "totals.discount", money(t.discount), c) : ""}
+      ${field(`Tax${t.tax_rate ? ` (${t.tax_rate}%)` : ""}`, "totals.tax", money(t.tax), c)}
+      ${field("Total", "totals.total", money(t.total), c)}
+    </div>
+    <details><summary class="meta">Raw JSON response</summary><pre>${esc(JSON.stringify(r, null, 2))}</pre></details>`;
+}
+
+function renderError(e, name) {
+  const b = e.body || {};
+  $("#result").innerHTML = `
+    <div style="display:flex;gap:10px;align-items:center"><span class="status error">REJECTED · ${e.status || ""}</span><b>${esc(name)}</b></div>
+    <div class="flags"><div class="flag error"><code>${esc(b.error || "error")}</code> · ${esc(b.message || e.message)}</div></div>
+    ${(b.details || []).length ? `<table><thead><tr><th>Field</th><th>Problem</th></tr></thead><tbody>${b.details.map((d) => `<tr><td>${esc(d.field)}</td><td>${esc(d.problem)}</td></tr>`).join("")}</tbody></table>` : ""}`;
+}
+
+async function upload(file) {
+  $("#result").innerHTML = `<div class="empty">Extracting ${esc(file.name)}…</div>`;
+  const fd = new FormData();
+  fd.append("file", file, file.name);
+  try { render(await api("/extract", { method: "POST", body: fd })); loadHistory(); }
+  catch (e) { renderError(e, file.name); }
+}
+
+async function loadHistory() {
+  const rows = await api("/extractions?limit=20");
+  $("#hist").innerHTML = rows.map((r) => `<li data-id="${r.id}"><span class="status ${r.status}">${r.status === "ok" ? "OK" : "REVIEW"}</span> ${esc(r.vendor)}<br><span class="meta">${esc(r.invoice_number)} · ${esc(r.total)} ${esc(r.currency)}</span></li>`).join("") || '<li class="meta">Nothing yet.</li>';
+}
+
+$("#hist").addEventListener("click", async (e) => { const li = e.target.closest("li[data-id]"); if (li) render(await api(`/extractions/${li.dataset.id}`)); });
+$("#samples").addEventListener("click", async (e) => {
+  const name = e.target.dataset?.name; if (!name) return;
+  const blob = await (await fetch(`/samples/${name}`)).blob();
+  upload(new File([blob], name, { type: "application/pdf" }));
+});
+const drop = $("#drop");
+drop.addEventListener("click", () => $("#file").click());
+$("#file").addEventListener("change", (e) => e.target.files[0] && upload(e.target.files[0]));
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); e.dataTransfer.files[0] && upload(e.dataTransfer.files[0]); });
+
+(async () => {
+  const h = await api("/health");
+  $("#mode").textContent = h.demo_mode ? "Demo mode: rule-based extractor, no API key" : `Extractor: ${h.extractor}`;
+  $("#mode").classList.toggle("demo", h.demo_mode);
+  const samples = await api("/samples");
+  $("#samples").innerHTML = samples.map((s) => `<button data-name="${esc(s)}">${esc(s)}</button>`).join("");
+  loadHistory();
+})();
+</script>
+</body>
+</html>
