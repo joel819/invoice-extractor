@@ -2,6 +2,12 @@
 
 POST a PDF invoice and get validated JSON back (vendor, dates, line items, totals), with a confidence score on every field and arithmetic checks. It runs locally for free.
 
+## Screenshots
+
+Invoice 04 has a printed total that is off by 40.00. The extractor keeps the printed total, flags `total_mismatch`, marks the invoice **needs review**, and highlights the fields involved in the failed check (the confidence column drops to 60%). Clean invoices come back **OK** with every field at 100%.
+
+![An invoice flagged for review: a red total_mismatch banner, highlighted low-confidence totals, and the extraction history](docs/screenshots/review.png)
+
 ## What it does
 
 - **Extraction.** Pulls the invoice number, dates, currency, vendor (name, address, tax ID, email), bill-to, every line item across all pages, and the totals (subtotal, discount, tax, tax rate, total).

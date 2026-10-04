@@ -53,7 +53,7 @@ def test_request_uses_groq_json_mode(llm, monkeypatch):
     monkeypatch.setattr(llm.client.chat.completions, "create", script)
     inv, unc = llm.extract("invoice text")
     req = script.requests[0]
-    assert req["model"] == "llama-3.3-70b-versatile" and req["response_format"] == {"type": "json_object"}
+    assert req["model"] == "openai/gpt-oss-120b" and req["response_format"] == {"type": "json_object"}
     assert str(llm.client.base_url).startswith("https://api.groq.com/openai/v1")
     assert inv.totals.total == 2662 and unc == []
 

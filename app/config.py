@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # LLM (Groq free tier via the OpenAI-compatible API)
     groq_api_key: str = ""
     groq_base_url: str = "https://api.groq.com/openai/v1"
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
     llm_timeout_seconds: float = 45.0
     llm_repair_attempts: int = 1  # re-ask the model once, with the validation errors, if its JSON is invalid
 
