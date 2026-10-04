@@ -3,68 +3,87 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>Invoice Extractor</title>
 <style>
   :root {
-    --bg: #f7f7f5; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #e4e4df;
-    --accent: #2f5bd3; --accent-soft: #e9eefb; --ok: #2f7d4f; --ok-soft: #e6f3ec;
-    --warn: #9a6700; --warn-soft: #fbf3dc; --err: #b3261e; --err-soft: #fbe9e7;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #151514; --panel: #1f1f1d; --text: #ecece8; --muted: #9d9d97; --line: #33332f;
-      --accent: #7f9ef0; --accent-soft: #252d44; --ok: #5cc488; --ok-soft: #1c2e24;
-      --warn: #e3b341; --warn-soft: #332a14; --err: #f2867d; --err-soft: #3a1e1c;
-    }
+    --paper: #fff4dc; --card: #fffdf7; --ink: #1c1b33; --muted: #6a6780;
+    --orange: #ff6a3d; --mint: #36d6a0; --lemon: #ffd43b; --lilac: #c3b1ff; --sky: #8fd3ff; --rose: #ff9aa2;
+    --shadow: 4px 4px 0 var(--ink);
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px; display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
+  body { margin: 0; color: var(--ink); font: 15px/1.55 ui-rounded, "Trebuchet MS", system-ui, sans-serif;
+         background-color: var(--paper); background-image: radial-gradient(var(--ink) 0.8px, transparent 0.8px);
+         background-size: 22px 22px; background-blend-mode: soft-light; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 28px 16px 40px; display: grid;
+          grid-template-columns: 290px 1fr; gap: 24px; align-items: start; }
   @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
-  header { grid-column: 1 / -1; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
-  h1 { font-size: 20px; margin: 0; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
-  aside .panel + .panel { margin-top: 16px; }
-  .badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
-  .badge.demo { color: var(--warn); }
-  .drop { border: 1.5px dashed var(--line); border-radius: 8px; padding: 22px; text-align: center; color: var(--muted); cursor: pointer; }
-  .drop.over { border-color: var(--accent); color: var(--accent); }
-  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); padding: 5px 10px; }
-  .samples button { display: block; width: 100%; text-align: left; margin-bottom: 6px; font-size: 13px; }
+  header { grid-column: 1 / -1; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  header > .meta { flex-basis: 100%; }
+  .logo { width: 46px; height: 46px; display: grid; place-items: center; font-size: 24px; background: var(--lemon);
+          border: 3px solid var(--ink); border-radius: 14px; box-shadow: var(--shadow); transform: rotate(-6deg); }
+  h1 { font: 800 30px/1 Georgia, "Times New Roman", serif; margin: 0; letter-spacing: -.5px; }
+  h1 span { background: linear-gradient(transparent 58%, var(--mint) 58%); padding: 0 4px; }
+  h2 { font: 800 13px/1 ui-rounded, system-ui, sans-serif; text-transform: uppercase; letter-spacing: .12em; margin: 0 0 12px; }
+  .panel { background: var(--card); border: 3px solid var(--ink); border-radius: 18px; padding: 18px; box-shadow: var(--shadow); }
+  aside .panel + .panel { margin-top: 20px; }
+  .badge { font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 99px; background: var(--mint);
+           border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+  .badge.demo { background: var(--lemon); }
+  .drop { border: 3px dashed var(--ink); border-radius: 14px; padding: 22px 12px; text-align: center; font-weight: 700;
+          background: var(--lemon); cursor: pointer; transition: transform .12s; }
+  .drop:hover { transform: rotate(-1.2deg) scale(1.02); }
+  .drop.over { background: var(--mint); transform: scale(1.04); }
+  button { font: inherit; font-weight: 700; cursor: pointer; border-radius: 12px; border: 2px solid var(--ink);
+           background: var(--card); color: var(--ink); padding: 6px 12px; box-shadow: 2px 2px 0 var(--ink);
+           transition: transform .08s, box-shadow .08s; }
+  button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+  button:active { transform: translate(2px, 2px); box-shadow: none; }
+  .samples { background: var(--sky); }
+  .samples button { display: block; width: 100%; text-align: left; margin-bottom: 8px; font-size: 13px; }
+  .samples button:last-child { margin-bottom: 0; }
   .hist { list-style: none; margin: 0; padding: 0; font-size: 13px; }
-  .hist li { padding: 6px 0; border-top: 1px solid var(--line); cursor: pointer; }
-  .hist li:hover { color: var(--accent); }
-  .status { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
-  .status.ok { background: var(--ok-soft); color: var(--ok); }
-  .status.needs_review { background: var(--warn-soft); color: var(--warn); }
-  .status.error { background: var(--err-soft); color: var(--err); }
+  .hist li { padding: 8px 0; border-bottom: 2px dotted var(--ink); cursor: pointer; }
+  .hist li:last-child { border-bottom: 0; }
+  .hist li:hover { color: var(--orange); }
+  .status { display: inline-block; font-size: 12px; font-weight: 800; padding: 2px 10px; border-radius: 99px;
+            border: 2px solid var(--ink); letter-spacing: .04em; }
+  .status.ok { background: var(--mint); }
+  .status.needs_review { background: var(--lemon); }
+  .status.error { background: var(--rose); }
   .meta { font-size: 12px; color: var(--muted); }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 14px 0; }
-  .field { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
-  .field.low { border-color: var(--warn); background: var(--warn-soft); }
-  .field .k { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
-  .field .v { font-weight: 500; word-break: break-word; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin: 16px 0; }
+  .field { border: 2px solid var(--ink); border-radius: 12px; padding: 8px 12px; background: #fff; }
+  .field.low { background: var(--lemon); box-shadow: 3px 3px 0 var(--orange); }
+  .field .k { font-size: 12px; font-weight: 700; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+  .field .v { font-weight: 700; word-break: break-word; }
   .conf { font-variant-numeric: tabular-nums; }
-  .low .conf { color: var(--warn); font-weight: 600; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .low .conf { color: var(--ink); font-weight: 800; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; border: 2px solid var(--ink);
+          border-radius: 12px; overflow: hidden; background: #fff; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--ink); }
+  tbody tr:last-child td { border-bottom: 0; }
+  th { font-size: 12px; background: var(--lilac); font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  tr.low td { background: var(--warn-soft); }
-  .flags { margin: 12px 0; display: grid; gap: 6px; }
-  .flag { font-size: 14px; padding: 8px 10px; border-radius: 6px; border-left: 3px solid; }
-  .flag.error { background: var(--err-soft); border-color: var(--err); }
-  .flag.warning { background: var(--warn-soft); border-color: var(--warn); }
-  .flag code { font-size: 12px; }
-  details pre { white-space: pre-wrap; font-size: 12px; background: var(--bg); padding: 10px; border-radius: 6px; max-height: 400px; overflow: auto; }
-  .empty { color: var(--muted); padding: 40px 0; text-align: center; }
+  tr.low td { background: var(--lemon); }
+  .flags { margin: 14px 0; display: grid; gap: 8px; }
+  .flag { font-size: 14px; font-weight: 600; padding: 9px 12px; border-radius: 12px; border: 2px solid var(--ink); }
+  .flag.error { background: var(--rose); }
+  .flag.warning { background: var(--lemon); }
+  .flag code { font-size: 12px; background: #fff; border: 1.5px solid var(--ink); border-radius: 6px; padding: 0 5px; }
+  details { margin-top: 14px; }
+  details summary { cursor: pointer; font-weight: 700; }
+  details pre { white-space: pre-wrap; font-size: 12px; background: var(--paper); border: 2px solid var(--ink);
+                padding: 10px; border-radius: 12px; max-height: 400px; overflow: auto; }
+  .empty { color: var(--ink); font-weight: 700; padding: 60px 0; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>Invoice Extractor</h1>
+    <div class="logo" aria-hidden="true">🧾</div>
+    <h1>Invoice <span>extractor</span></h1>
     <span id="mode" class="badge">loading…</span>
     <span class="meta">PDF in, validated JSON out. Low-confidence fields are highlighted.</span>
   </header>
@@ -72,7 +91,7 @@
   <aside>
     <div class="panel">
       <h2>Upload</h2>
-      <div id="drop" class="drop">Drop a PDF invoice here or click</div>
+      <div id="drop" class="drop">Drop a PDF invoice here<br><span class="meta" style="color:var(--ink)">or click to upload</span></div>
       <input id="file" type="file" accept="application/pdf,.pdf" hidden>
     </div>
     <div class="panel samples">
@@ -178,7 +197,7 @@ drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove
 
 (async () => {
   const h = await api("/health");
-  $("#mode").textContent = h.demo_mode ? "Demo mode: rule-based extractor, no API key" : `Extractor: ${h.extractor}`;
+  $("#mode").textContent = h.demo_mode ? "Demo mode · rule-based" : `Live · ${h.extractor}`;
   $("#mode").classList.toggle("demo", h.demo_mode);
   const samples = await api("/samples");
   $("#samples").innerHTML = samples.map((s) => `<button data-name="${esc(s)}">${esc(s)}</button>`).join("");
